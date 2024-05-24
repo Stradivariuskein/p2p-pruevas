@@ -3,30 +3,13 @@ import threading
 
 clients = []
 
-url_port = b"p2p-pruevas.onrender.com:5000"
-
 
 def handle_client(client_socket, client_address):
     global clients
 
-    # Intenta obtener la IP original del encabezado HTTP X-Forwarded-For
-    real_ip = client_address[0]
-    real_port = client_address[1]
-
-    # Leer el encabezado HTTP para obtener la IP real (si existe)
-    try:
-        client_socket.send(b"GET / HTTP/1.1\r\nHost= " +
-                           f"{url_port}" + b"\r\n\r\n")
-        response = client_socket.recv(1024).decode()
-        for line in response.split("\r\n"):
-            if line.startswith("X-Forwarded-For:"):
-                real_ip = line.split(":")[1].strip()
-                break
-    except Exception as e:
-        print(f"Error al leer el encabezado HTTP: {e}")
-
-    clients.append((client_socket, (real_ip, real_port)))
-    print(f"Cliente {real_ip}:{real_port} conectado.")
+    # Añadir el cliente a la lista
+    clients.append((client_socket, client_address))
+    print(f"Cliente {client_address} conectado.")
 
     if len(clients) == 2:
         client1, addr1 = clients[0]
@@ -36,6 +19,7 @@ def handle_client(client_socket, client_address):
         client1.send(f"{addr2[0]}:{addr2[1]}".encode())
         client2.send(f"{addr1[0]}:{addr1[1]}".encode())
 
+        # Vaciar la lista de clientes para permitir nuevas conexiones
         clients = []
 
 
