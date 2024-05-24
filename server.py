@@ -3,7 +3,7 @@ import threading
 
 clients = []
 
-url = "p2p-pruevas.onrender.com"
+url_port = b"p2p-pruevas.onrender.com:5000"
 
 
 def handle_client(client_socket, client_address):
@@ -16,7 +16,7 @@ def handle_client(client_socket, client_address):
     # Leer el encabezado HTTP para obtener la IP real (si existe)
     try:
         client_socket.send(b"GET / HTTP/1.1\r\nHost= " +
-                           f"{url}:5000" + b"\r\n\r\n")
+                           f"{url_port}" + b"\r\n\r\n")
         response = client_socket.recv(1024).decode()
         for line in response.split("\r\n"):
             if line.startswith("X-Forwarded-For:"):
