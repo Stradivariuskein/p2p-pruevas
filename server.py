@@ -3,12 +3,30 @@ import threading
 
 clients = []
 
+url = "p2p-pruevas.onrender.com"
 
-def handle_client(client_socket):
+
+def handle_client(client_socket, client_address):
     global clients
-    address = client_socket.getpeername()
-    clients.append((client_socket, address))
-    print(f"Cliente {address} conectado.")
+
+    # Intenta obtener la IP original del encabezado HTTP X-Forwarded-For
+    real_ip = client_address[0]
+    real_port = client_address[1]
+
+    # Leer el encabezado HTTP para obtener la IP real (si existe)
+    try:
+        client_socket.send(b"GET / HTTP/1.1\r\nHost= " +
+                           f"{url}:5000" + b"\r\n\r\n")
+        response = client_socket.recv(1024).decode()
+        for line in response.split("\r\n"):
+            if line.startswith("X-Forwarded-For:"):
+                real_ip = line.split(":")[1].strip()
+                break
+    except Exception as e:
+        print(f"Error al leer el encabezado HTTP: {e}")
+
+    clients.append((client_socket, (real_ip, real_port)))
+    print(f"Cliente {real_ip}:{real_port} conectado.")
 
     if len(clients) == 2:
         client1, addr1 = clients[0]
@@ -28,8 +46,9 @@ def start_server(host, port):
     print(f"Servidor escuchando en {host}:{port}")
 
     while True:
-        client_socket, addr = server_socket.accept()
-        threading.Thread(target=handle_client, args=(client_socket,)).start()
+        client_socket, client_address = server_socket.accept()
+        threading.Thread(target=handle_client, args=(
+            client_socket, client_address)).start()
 
 
 if __name__ == "__main__":
